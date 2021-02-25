@@ -7,7 +7,7 @@ import re
 class Material:
     def __init__(self):
         '''
-        name:
+        name: the name of current material
         pattern: 
         epsilon:
         n:
@@ -105,11 +105,28 @@ class OpticalGrating:
 
 class Optic:
     def __init__(self):
-        self.free_space_wavelength = 1.0
+        '''
+            (number) Angles in degrees. 
+            phi and theta give the spherical coordinate angles of the planewave k-vector. 
+            For zero angles, the k-vector is assumed to be (0, 0, kz), 
+            while the electric field is assumed to be (E0, 0, 0), and the magnetic field is in (0, H0, 0). 
+            The angle phi specifies first the angle by which the E,H,k frame should be rotated (CW) about the y-axis,
+            and the angle theta specifies next the angle by which the E,H,k frame should be rotated (CCW) about the z-axis. 
+            Note the different directions of rotations for each angle
+        '''
+        #optic parameter in ini file
+        self.free_space_wavelength = 0.0
         self.incidence_angle = 0.0
         self.azimuth_angle = 0.0
         self.polarization_angle = 0.0
         self.polarization_phase_diff = 0.0
+        #optic parameter in lua file
+        self.phi = 0
+        self.theta = 0
+        self.s_amp = 1
+        self.s_phase = 0
+        self.p_amp = 1
+        self.p_phase = 0
     
     def set_free_space_wavelength(value):
         self.free_space_wavelength = value
@@ -118,23 +135,41 @@ class Optic:
     
     def set_incidence_angle(value):
         self.incidence_angle = value
+        self.theta = value
     def get_incidence_angle():
         return self.incidence_angle
+    def get_theta():
+        return self.theta
 
     def set_azimuth_angle(value):
         self.azimuth_angle = value
+        self.phi = 90 - value
     def get_azimuth_angle():
         return self.azimuth_angle
+    def get_phi():
+        return self.phi
     
     def set_polarization_angle(value):
         self.polarization_angle = value
+        self.p_amp = 10 * math.cos(math.radians(value))
+        self.s_amp = 10 * math.sin(math.radians(value))
     def get_polarization_angle():
         return self.polarization_angle
+    def get_p_amp():
+        return self.p_amp
+    def get_s_amp():
+        return self.s_amp
 
     def set_polarization_phase_diff(value):
         self.polarization_phase_diff = value
+        self.p_phase = 0
+        self.s_phase = self.p_phase + value
     def get_polarization_phase_diff():
         return self.polarization_phase_diff
+    def get_s_phase():
+        return self.s_phase
+    def get_p_phase():
+        return self.p_phase
 
 
 class S4:
@@ -252,11 +287,14 @@ def extract_data_from(input_ini_file):
                 elif re.match(r'k=', line):
                     S4_Object.optical_grating.material_array[material_num].set_k(float(re.findall(r'\d+.?\d*', line)[0]))
 
+            elif read_mode == 3:
+                pass
+
             else:
                 pass
         line = file.readline()
     file.close()
-    return S4
+    return S4_Object
 
 
 def write_script_to(S4_Object, output_lua_file):
@@ -282,7 +320,12 @@ def write_script_to(S4_Object, output_lua_file):
         file.write('\n')
     file.write('\n')
     #set the structure of optical grating
+    file.write('\n')
     #simulation
+    file.write("Simulation:SetExcitationPlanewave(" \
+        + "{" + str(S4_Object.optic.get_phi())  + ',' + str(S4_Object.optic.get_theta()) + '}' \
+        + "{" + str(S4_Object.optic.get_s_amp()) + ',' + str(S4_Object.optic.get_s_phase()) + '}' \
+        + "{" + str(S4_Object.optic.get_p_amp()) + ',' + str(S4_Object.optic.get_p_phase()) + '})' )
 
 
 
