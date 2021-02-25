@@ -34,6 +34,33 @@ class Material:
     def get_pattern():
         return self.pattern
 
+    def set_name(name):
+        self.name = name
+    def get_name():
+        return self.name
+
+class Layer:
+    def __init__(self):
+        self.depth = 0.0
+        self.pattern = [[0, 0], [0, 1], [1, 0], [1, 1]]
+        self.name = ""
+
+    def set_name(name):
+        self.name = name
+    def get_name():
+        return self.name
+
+    def set_depth(value):
+        self.depth = value
+    def get_depth():
+        return self.depth
+
+    def set_pattern(vertexes_array):
+        self.pattern = vertexes_array
+    def add_vertex(vertex):
+        self.pattern.append(vertex)
+    def get_pattern():
+        return self.pattern
 
 class OpticalGrating:
     def __init__(self):
@@ -44,7 +71,7 @@ class OpticalGrating:
         '''
         self.layer_num = 3
         self.depth_array = None
-        self.material_array = None
+        self.material_array = []
         self.dimension = 3
         self.height = 1.0
 
@@ -114,7 +141,7 @@ class S4:
     def __init__(self):
         self.optic = Optic()
         self.optical_grating = OpticalGrating()
-        self.wave_vector = None
+        self.lattice_vector = None
         self.fourier_series_num = 10
         self.background_index = 1.0
     
@@ -138,10 +165,10 @@ class S4:
     def get_fourier_series_num():
         return self.fourier_series_num
 
-    def set_wave_vector(wave_vector):
-        self.wave_vector = wave_vector
-    def get_wave_vector():
-        return self.wave_vector
+    def set_lattice_vector(lattice_vector):
+        self.lattice_vector = lattice_vector
+    def get_lattice_vector():
+        return self.lattice_vector
     
     def set_background_index(value):
         self.background_index = value
@@ -154,6 +181,8 @@ def extract_data_from(input_ini_file):
     read_mode = 0
     file = open(input_ini_file, 'r', encoding = 'utf-8')
     line = file.readline()
+    material_num = -1
+    geometry_num = -1
     while line:
         if line.count('\n') == len(line):
             line = file.readline()
@@ -163,12 +192,16 @@ def extract_data_from(input_ini_file):
         elif re.match(r'\[OPTICAL\]', line):
             read_mode = 1
         elif re.match(r'\[MATERIAL', line):
+            material_num = material_num + 1
+            temp_material = Material()
+            S4_Object.optical_grating.add_material(temp_material)
             read_mode = 2
         elif re.match(r'\[[GEOMETRY', line):
+            geometry_num = geometry_num + 1
             read_mode = 3
         else:
             if read_mode == 0:
-                wave_vector = [[1.0, 0], [0, 1.0]]
+                lattice_vector = [[1.0, 0], [0, 1.0]]
                 height_min = -1.0
                 height_max = 1.0
                 if re.match(r'dimension', line):
@@ -176,11 +209,11 @@ def extract_data_from(input_ini_file):
                 elif re.match(r'background_index', line):
                     S4_Object.set_background_index(float(re.findall(r'\d+.?\d*', line)[0]))
                 elif re.match(r'pitch_x', line):
-                    wave_vector[0][0] = float(re.findall(r'\d+.?\d*', line)[0])
+                    lattice_vector[0][0] = float(re.findall(r'\d+.?\d*', line)[0])
                     line = file.readline()
                     if re.match(r'pitch_y', line):
-                        wave_vector[1][1] = float(re.findall(r'\d+.?\d*', line)[0])
-                    S4_Object.set_wave_vector(wave_vector)   
+                        lattice_vector[1][1] = float(re.findall(r'\d+.?\d*', line)[0])
+                    S4_Object.set_lattice_vector(lattice_vector)   
                 elif re.match(r'domain_max', line):
                     height_max = float(re.findall(r'\d+.?\d*', line)[0])
                     line = file.readline()
@@ -210,20 +243,55 @@ def extract_data_from(input_ini_file):
                     S4_Object.optic.set_polarization_angle(float(re.findall(r'\d+.?\d*', line)[0]))
                 elif re.match(r'polarization_phase_diff', line):
                     S4_Object.optic.set_polarization_phase_diff(float(re.findall(r'\d+.?\d*', line)[0]))
+
             elif read_mode == 2:
-                pass
+                if re.match(r'name=', line):
+                    S4_Object.optical_grating.material_array[material_num].set_name(line[5:len(line) - 1])
+                elif re.match(r'n=', line):
+                    S4_Object.optical_grating.material_array[material_num].set_n(float(re.findall(r'\d+.?\d*', line)[0]))
+                elif re.match(r'k=', line):
+                    S4_Object.optical_grating.material_array[material_num].set_k(float(re.findall(r'\d+.?\d*', line)[0]))
+
             else:
                 pass
         line = file.readline()
+    file.close()
     return S4
 
 
-def write_script_to(output_lua_file):
-    pass
+def write_script_to(S4_Object, output_lua_file):
+    file = open(output_lua_file, 'w')
+    #set S4 simulation object
+    file.write("S = S4.NewSimulation()\n\n")
+    #set lattice vector
+    if S4_Object.optical_grating.get_dimension() == 2:
+        file.write("S:SetLattice({" + str((S4_Object.optical_grating.get_lattice_vector())[0][0]) + ',' + "0})")
+    elif S4_Object.optical_grating.get_dimension() == 3:
+        file.write("S:SetLattice({" + str((S4_Object.optical_grating.get_lattice_vector())[0][0]) + ',' + "0},{0,"\
+            str((S4_Object.optical_grating.get_lattice_vector())[1][1]) + "})")
+    else:
+        pass
+    file.write('\n\n')
+    #set the spanning number of fourier series
+    file.write("S:SetNumG(" + str(S4_Object.get_fourier_series_num()) + ")")
+    file.write('\n\n')
+    #set the material
+    for i in range(len(S4_Object.optical_grating.get_material_array())):
+        file.write("S:AddMaterial(" + (S4_Object.optical_grating.get_material_array())[i].get_name() + '", {' \
+            +str((S4_Object.optical_grating.get_material_array())[i].get_n() ** 2) + ", 0})")
+        file.write('\n')
+    file.write('\n')
+    #set the structure of optical grating
+    #simulation
+
 
 
 def main(input_file_name, output_file_name):
     '''
     This is the main body of interface transfer function.
     '''
-    pass
+    S4_Object = extract_data_from(input_file_name)
+    write_script_to(output_file_name)
+
+if __name__ == '__main__':
+    main()
