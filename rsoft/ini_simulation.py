@@ -176,7 +176,7 @@ class S4:
     def __init__(self):
         self.optic = Optic()
         self.optical_grating = OpticalGrating()
-        self.lattice_vector = None
+        self.lattice_vector = [[1, 0], [0, 1]]
         self.fourier_series_num = 10
         self.background_index = 1.0
     
@@ -236,7 +236,7 @@ def extract_data_from(input_ini_file):
             read_mode = 3
         else:
             if read_mode == 0:
-                lattice_vector = [[1.0, 0], [0, 1.0]]
+                lattice_vector = [[1, 0], [0, 1]]
                 height_min = -1.0
                 height_max = 1.0
                 if re.match(r'dimension', line):
@@ -288,7 +288,12 @@ def extract_data_from(input_ini_file):
                     S4_Object.optical_grating.material_array[material_num].set_k(float(re.findall(r'\d+.?\d*', line)[0]))
 
             elif read_mode == 3:
-                pass
+                if re.match(r'poly_file=', line):
+                    if
+                elif re.match(r'mat_name=', line):
+                    pass
+                else:
+                    pass
 
             else:
                 pass
@@ -302,10 +307,7 @@ def write_script_to(S4_Object, output_lua_file):
     #set S4 simulation object
     file.write("S = S4.NewSimulation()\n\n")
     #set lattice vector
-    if S4_Object.optical_grating.get_dimension() == 2:
-        file.write("S:SetLattice({" + str((S4_Object.optical_grating.get_lattice_vector())[0][0]) + ',' + "0})")
-    elif S4_Object.optical_grating.get_dimension() == 3:
-        file.write("S:SetLattice({" + str((S4_Object.optical_grating.get_lattice_vector())[0][0]) + ',' + "0},{0,"\
+    file.write("S:SetLattice({" + str((S4_Object.optical_grating.get_lattice_vector())[0][0]) + ',' + "0},{0,"\
             str((S4_Object.optical_grating.get_lattice_vector())[1][1]) + "})")
     else:
         pass
