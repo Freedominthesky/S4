@@ -3,104 +3,137 @@
 # Update Date: 2021年2月23日
 import os
 import re
+import sys
 
 class Material:
     def __init__(self):
         '''
         name: the name of current material
-        pattern: 
-        epsilon:
-        n:
+        epsilon: the dialetric of current material
+        n: the reflactive index of current material
         '''
         self.name = ""
-        self.pattern = []
         self.epsilon = 1.0
         self.n = 1.0
 
-    def set_epsilon(value):
+    def set_epsilon(self, value):
         self.epsilon = value
-    def get_epsilon():
+    def get_epsilon(self):
         return self.epsilon
 
-    def set_n(value):
+    def set_n(self, value):
         self.n = value
-    def get_n():
+    def get_n(self):
         return self.n
 
-    def set_pattern(polygon_array):
-        self.pattern = polygon_array
-    def add_polygon(polygon):
-        self.pattern.append(polygon)
-    def get_pattern():
-        return self.pattern
-
-    def set_name(name):
+    def set_name(self, name):
         self.name = name
-    def get_name():
+    def get_name(self):
         return self.name
 
+class Geometry:
+    def __init__(self):
+        # the parameter provided by ini file.
+        self.begin_coordinate = [0, 0, 0]
+        self.end_coordinate = [0, 0, 0]
+        self.scaling_size = 1
+        self.polygon_array = []
+        self.material_name = ""
+        # the parameter required by lua file.
+        self.center = [0, 0]
+
+    def set_begin_coordinate(self, coordinate):
+        self.begin_coordinate = coordinate
+    def get_begin_coordinate(self):
+        return self.begin_coordinate
+
+    def set_end_coordinate(self, coordinate):
+        self.end_coordinate = coordinate
+    def get_end_coordinate(self):
+        return self.end_coordinate
+
+    def set_scaling_size(self, value):
+        self.scaling_size = value
+    def get_scaling_size(self):
+        return self.scaling_size
+    
+    def set_polygon_array(self, vertexes):
+        self.polygon_array = vertexes
+    def add_polygon_vertex(self, vertex):
+        self.polygon_array.append(vertex)
+    def get_polygon_array(self):
+        return self.polygon_array
+
+    def set_material_name(self, name):
+        self.material_name = name
+    def get_material_name(self):
+        return self.material_name
+
+    def set_center(self, vertex):
+        self.center = vertex
+    def get_center(self):
+        return self.center
+        
 class Layer:
     def __init__(self):
         self.depth = 0.0
-        self.pattern = [[0, 0], [0, 1], [1, 0], [1, 1]]
+        self.geometry_array = []
         self.name = ""
 
-    def set_name(name):
+    def set_name(self, name):
         self.name = name
-    def get_name():
+    def get_name(self):
         return self.name
 
-    def set_depth(value):
+    def set_depth(self, value):
         self.depth = value
-    def get_depth():
+    def get_depth(self):
         return self.depth
 
-    def set_pattern(vertexes_array):
-        self.pattern = vertexes_array
-    def add_vertex(vertex):
-        self.pattern.append(vertex)
-    def get_pattern():
-        return self.pattern
+    def set_geometry_array(self, geometry_array):
+        self.geometry_array = geometry_array
+    def add_geometry(self, geometry):
+        self.geometry_array.append(vertex)
+    def get_pattern(self):
+        return self.geometry_array
 
 class OpticalGrating:
     def __init__(self):
         '''
-        layer_num: total layer of the optical grating, input layer and output layer.
-        depth_array: depth of each layer, the default value of input value and output layer is 0.
-        material_array: the array consists of all the materials in the system.
+        layer_array: 
+        material_array: 
+        dimension:
         '''
-        self.layer_num = 3
-        self.depth_array = None
+        self.layer_array = []
         self.material_array = []
+        self.geometry_array = []
         self.dimension = 3
-        self.height = 1.0
 
-    def set_layer_num(value):
-        self.layer_num = value
-    def get_layer_num(value):
-        return self.layer_num
-    
-    def set_depth_array(depth_array):
-        self.depth_array = depth_array
-    def get_depth_array():
-        return self.depth_array
+    def set_layer_array(self, layer_array):
+        self.layer_array = layer_array
+    def add_layer(self, layer):
+        self.layer_array.append(layer)
+    def get_layer_array(self, layer_array):
+        return self.layer_array
 
-    def set_material_array(material_array):
+    def set_material_array(self, material_array):
         self.material_array = material_array
-    def add_material(material):
+    def add_material(self, material):
         self.material_array.append(material)
-    def get_material_array():
+    def get_material_array(self):
         return self.material_array
+    
+    def set_geometry_array(self, geometry_array):
+        self.geometry_array = geometry_array
+    def add_geometry(self, geometry):
+        self.geometry_array.append(geometry)
+    def get_geometry_array(self):
+        return self.geometry_array
 
-    def set_dimension(value):
+    def set_dimension(self, value):
         self.dimension = value
-    def get_dimension():
+    def get_dimension(self):
         return self.dimension
-
-    def set_height(value):
-        self.height = value
-    def get_height():
-        return self.height
 
 
 class Optic:
@@ -128,47 +161,47 @@ class Optic:
         self.p_amp = 1
         self.p_phase = 0
     
-    def set_free_space_wavelength(value):
+    def set_free_space_wavelength(self, value):
         self.free_space_wavelength = value
-    def get_free_space_wavelength():
+    def get_free_space_wavelength(self):
         return self.free_space_wavelength
     
-    def set_incidence_angle(value):
+    def set_incidence_angle(self, value):
         self.incidence_angle = value
         self.theta = value
-    def get_incidence_angle():
+    def get_incidence_angle(self):
         return self.incidence_angle
-    def get_theta():
+    def get_theta(self):
         return self.theta
 
-    def set_azimuth_angle(value):
+    def set_azimuth_angle(self, value):
         self.azimuth_angle = value
         self.phi = 90 - value
-    def get_azimuth_angle():
+    def get_azimuth_angle(self):
         return self.azimuth_angle
-    def get_phi():
+    def get_phi(self):
         return self.phi
     
-    def set_polarization_angle(value):
+    def set_polarization_angle(self, value):
         self.polarization_angle = value
         self.p_amp = 10 * math.cos(math.radians(value))
         self.s_amp = 10 * math.sin(math.radians(value))
-    def get_polarization_angle():
+    def get_polarization_angle(self):
         return self.polarization_angle
-    def get_p_amp():
+    def get_p_amp(self):
         return self.p_amp
-    def get_s_amp():
+    def get_s_amp(self):
         return self.s_amp
 
-    def set_polarization_phase_diff(value):
+    def set_polarization_phase_diff(self, value):
         self.polarization_phase_diff = value
         self.p_phase = 0
         self.s_phase = self.p_phase + value
-    def get_polarization_phase_diff():
+    def get_polarization_phase_diff(self):
         return self.polarization_phase_diff
-    def get_s_phase():
+    def get_s_phase(self):
         return self.s_phase
-    def get_p_phase():
+    def get_p_phase(self):
         return self.p_phase
 
 
@@ -180,34 +213,34 @@ class S4:
         self.fourier_series_num = 10
         self.background_index = 1.0
     
-    def set_optic(optic):
+    def set_optic(self, optic):
         self.optic = optic
-    def get_optic():
+    def get_optic(self):
         return self.optic 
 
-    def set_material(material):
+    def set_material(self, material):
         self.material = material
-    def get_material():
+    def get_material(self):
         return self.material
  
-    def set_optical_grating(optical_grating):
+    def set_optical_grating(self, optical_grating):
         self.optical_grating = optical_grating
-    def get_optical_grating():
+    def get_optical_grating(self):
         return self.optical_grating
 
-    def set_fourier_series_num(value):
+    def set_fourier_series_num(self, value):
         self.fourier_series_num = value
-    def get_fourier_series_num():
+    def get_fourier_series_num(self):
         return self.fourier_series_num
 
-    def set_lattice_vector(lattice_vector):
+    def set_lattice_vector(self, lattice_vector):
         self.lattice_vector = lattice_vector
-    def get_lattice_vector():
+    def get_lattice_vector(self):
         return self.lattice_vector
     
-    def set_background_index(value):
+    def set_background_index(self, value):
         self.background_index = value
-    def get_background_index():
+    def get_background_index(self):
         return self.get_background_index()
 
 
@@ -231,8 +264,10 @@ def extract_data_from(input_ini_file):
             temp_material = Material()
             S4_Object.optical_grating.add_material(temp_material)
             read_mode = 2
-        elif re.match(r'\[[GEOMETRY', line):
+        elif re.match(r'\[GEOMETRY', line):
             geometry_num = geometry_num + 1
+            temp_geometry = Geometry()
+            S4_Object.optical_grating.add_geometry(temp_geometry)
             read_mode = 3
         else:
             if read_mode == 0:
@@ -240,7 +275,10 @@ def extract_data_from(input_ini_file):
                 height_min = -1.0
                 height_max = 1.0
                 if re.match(r'dimension', line):
-                    S4_Object.optical_grating.set_dimension(float(re.findall(r'\d+.?\d*', line)[0]))
+                    temp = int(re.findall(r'\d+.?\d*', line)[0])
+                    print("temp: ", temp)
+                    S4_Object.optical_grating.set_dimension(temp)
+                    
                 elif re.match(r'background_index', line):
                     S4_Object.set_background_index(float(re.findall(r'\d+.?\d*', line)[0]))
                 elif re.match(r'pitch_x', line):
@@ -264,8 +302,10 @@ def extract_data_from(input_ini_file):
                     S4_Object.set_fourier_series_num(fourier_series_num)
                 elif re.match(r'depth', line):
                     S4_Object.set_depth_array([float(re.findall(r'\d+.?\d*', line)[0])])
-                elif re.match(r'slice_num', line)
-                    S4_Object.optical_grating.set_layer_num(float(re.findall(r'\d+.?\d*', line)[0] + 2)
+                elif re.match(r'slice_num', line):
+                    S4_Object.optical_grating.set_layer_num(float(re.findall(r'\d+.?\d*', line)[0] + 2))
+                else:
+                    pass
 
             elif read_mode == 1:
                 if re.match(r'free_space_wavelength', line):
@@ -289,9 +329,22 @@ def extract_data_from(input_ini_file):
 
             elif read_mode == 3:
                 if re.match(r'poly_file=', line):
-                    if
+                    vertex_array = []
+                    if(line[10] == '\n'):
+                        pass
+                    else:
+                        poly_file_name = (line[10:])[:-1]
+                        poly_file = open(poly_file, 'r')
+                        line_poly = poly_file.readline()
+                        while line_poly:
+                            vertex = [float(re.findall(r'\d+.?\d*', line)[0]), float(re.findall(r'\d+.?\d*', line)[1])]
+                            line_poly = poly_file.readline()
+                            vertex_array.append(vertex)
+                    S4_Object.optical_grating.geometry_array[geometry_num].set_polygon_array(vertex_array)
+
                 elif re.match(r'mat_name=', line):
-                    pass
+                    material_name = (line[9:])[:-1]
+                    S4_Object.optical_grating.geometry_array[geometry_num].set_material_name(material_name)
                 else:
                     pass
 
@@ -308,9 +361,7 @@ def write_script_to(S4_Object, output_lua_file):
     file.write("S = S4.NewSimulation()\n\n")
     #set lattice vector
     file.write("S:SetLattice({" + str((S4_Object.optical_grating.get_lattice_vector())[0][0]) + ',' + "0},{0,"\
-            str((S4_Object.optical_grating.get_lattice_vector())[1][1]) + "})")
-    else:
-        pass
+            +str((S4_Object.optical_grating.get_lattice_vector())[1][1]) + "})")
     file.write('\n\n')
     #set the spanning number of fourier series
     file.write("S:SetNumG(" + str(S4_Object.get_fourier_series_num()) + ")")
@@ -322,21 +373,33 @@ def write_script_to(S4_Object, output_lua_file):
         file.write('\n')
     file.write('\n')
     #set the structure of optical grating
+
     file.write('\n')
     #simulation
     file.write("Simulation:SetExcitationPlanewave(" \
         + "{" + str(S4_Object.optic.get_phi())  + ',' + str(S4_Object.optic.get_theta()) + '}' \
         + "{" + str(S4_Object.optic.get_s_amp()) + ',' + str(S4_Object.optic.get_s_phase()) + '}' \
         + "{" + str(S4_Object.optic.get_p_amp()) + ',' + str(S4_Object.optic.get_p_phase()) + '})' )
+    file.close()
 
 
 
-def main(input_file_name, output_file_name):
+def ini2lua(input_file_name):
     '''
     This is the main body of interface transfer function.
     '''
     S4_Object = extract_data_from(input_file_name)
-    write_script_to(output_file_name)
+    write_script_to(S4_Object, "temp.lua")
+    return output_file_name
 
 if __name__ == '__main__':
-    main()
+    if len(sys.argv) != 2:
+        print("Illegal Number of Arguments! The legal command is 'python ini_simulation.py filename.ini'")
+    elif sys.argv[1][-4:] != ".ini":
+        print("Illegal type of Arguments! filename.ini is required!")
+        print(sys.argv[1][-4:])
+    else:
+        lua_file = ini2lua(sys.argv[1])
+        os.system("./S4 temp.lua")
+        #os.system("rm temp.lua")
+
