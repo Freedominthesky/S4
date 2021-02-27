@@ -4,98 +4,12 @@
 import os
 import re
 import sys
+import math
+import Material
+import Geometry
+import Layer  
+import Optic      
 
-class Material:
-    def __init__(self):
-        '''
-        name: the name of current material
-        epsilon: the dialetric of current material
-        n: the reflactive index of current material
-        '''
-        self.name = ""
-        self.epsilon = 1.0
-        self.n = 1.0
-
-    def set_epsilon(self, value):
-        self.epsilon = value
-    def get_epsilon(self):
-        return self.epsilon
-
-    def set_n(self, value):
-        self.n = value
-    def get_n(self):
-        return self.n
-
-    def set_name(self, name):
-        self.name = name
-    def get_name(self):
-        return self.name
-
-class Geometry:
-    def __init__(self):
-        # the parameter provided by ini file.
-        self.begin_coordinate = [0, 0, 0]
-        self.end_coordinate = [0, 0, 0]
-        self.scaling_size = 1
-        self.polygon_array = []
-        self.material_name = ""
-        # the parameter required by lua file.
-        self.center = [0, 0]
-
-    def set_begin_coordinate(self, coordinate):
-        self.begin_coordinate = coordinate
-    def get_begin_coordinate(self):
-        return self.begin_coordinate
-
-    def set_end_coordinate(self, coordinate):
-        self.end_coordinate = coordinate
-    def get_end_coordinate(self):
-        return self.end_coordinate
-
-    def set_scaling_size(self, value):
-        self.scaling_size = value
-    def get_scaling_size(self):
-        return self.scaling_size
-    
-    def set_polygon_array(self, vertexes):
-        self.polygon_array = vertexes
-    def add_polygon_vertex(self, vertex):
-        self.polygon_array.append(vertex)
-    def get_polygon_array(self):
-        return self.polygon_array
-
-    def set_material_name(self, name):
-        self.material_name = name
-    def get_material_name(self):
-        return self.material_name
-
-    def set_center(self, vertex):
-        self.center = vertex
-    def get_center(self):
-        return self.center
-        
-class Layer:
-    def __init__(self):
-        self.depth = 0.0
-        self.geometry_array = []
-        self.name = ""
-
-    def set_name(self, name):
-        self.name = name
-    def get_name(self):
-        return self.name
-
-    def set_depth(self, value):
-        self.depth = value
-    def get_depth(self):
-        return self.depth
-
-    def set_geometry_array(self, geometry_array):
-        self.geometry_array = geometry_array
-    def add_geometry(self, geometry):
-        self.geometry_array.append(vertex)
-    def get_pattern(self):
-        return self.geometry_array
 
 class OpticalGrating:
     def __init__(self):
@@ -136,82 +50,14 @@ class OpticalGrating:
         return self.dimension
 
 
-class Optic:
-    def __init__(self):
-        '''
-            (number) Angles in degrees. 
-            phi and theta give the spherical coordinate angles of the planewave k-vector. 
-            For zero angles, the k-vector is assumed to be (0, 0, kz), 
-            while the electric field is assumed to be (E0, 0, 0), and the magnetic field is in (0, H0, 0). 
-            The angle phi specifies first the angle by which the E,H,k frame should be rotated (CW) about the y-axis,
-            and the angle theta specifies next the angle by which the E,H,k frame should be rotated (CCW) about the z-axis. 
-            Note the different directions of rotations for each angle
-        '''
-        #optic parameter in ini file
-        self.free_space_wavelength = 0.0
-        self.incidence_angle = 0.0
-        self.azimuth_angle = 0.0
-        self.polarization_angle = 0.0
-        self.polarization_phase_diff = 0.0
-        #optic parameter in lua file
-        self.phi = 0
-        self.theta = 0
-        self.s_amp = 1
-        self.s_phase = 0
-        self.p_amp = 1
-        self.p_phase = 0
-    
-    def set_free_space_wavelength(self, value):
-        self.free_space_wavelength = value
-    def get_free_space_wavelength(self):
-        return self.free_space_wavelength
-    
-    def set_incidence_angle(self, value):
-        self.incidence_angle = value
-        self.theta = value
-    def get_incidence_angle(self):
-        return self.incidence_angle
-    def get_theta(self):
-        return self.theta
-
-    def set_azimuth_angle(self, value):
-        self.azimuth_angle = value
-        self.phi = 90 - value
-    def get_azimuth_angle(self):
-        return self.azimuth_angle
-    def get_phi(self):
-        return self.phi
-    
-    def set_polarization_angle(self, value):
-        self.polarization_angle = value
-        self.p_amp = 10 * math.cos(math.radians(value))
-        self.s_amp = 10 * math.sin(math.radians(value))
-    def get_polarization_angle(self):
-        return self.polarization_angle
-    def get_p_amp(self):
-        return self.p_amp
-    def get_s_amp(self):
-        return self.s_amp
-
-    def set_polarization_phase_diff(self, value):
-        self.polarization_phase_diff = value
-        self.p_phase = 0
-        self.s_phase = self.p_phase + value
-    def get_polarization_phase_diff(self):
-        return self.polarization_phase_diff
-    def get_s_phase(self):
-        return self.s_phase
-    def get_p_phase(self):
-        return self.p_phase
-
-
 class S4:
     def __init__(self):
-        self.optic = Optic()
+        self.optic = Optic.Optic()
         self.optical_grating = OpticalGrating()
         self.lattice_vector = [[1, 0], [0, 1]]
         self.fourier_series_num = 10
         self.background_index = 1.0
+        self.depth_array = [0]
     
     def set_optic(self, optic):
         self.optic = optic
@@ -243,6 +89,12 @@ class S4:
     def get_background_index(self):
         return self.get_background_index()
 
+    def set_depth_array(self, depth_array):
+        self.depth_array.extend(depth_array)
+        self.depth_array.append(0)
+    def get_depth_array(self):
+        return self.depth_array
+
 
 def extract_data_from(input_ini_file):
     S4_Object = S4()
@@ -261,12 +113,12 @@ def extract_data_from(input_ini_file):
             read_mode = 1
         elif re.match(r'\[MATERIAL', line):
             material_num = material_num + 1
-            temp_material = Material()
+            temp_material = Material.Material()
             S4_Object.optical_grating.add_material(temp_material)
             read_mode = 2
         elif re.match(r'\[GEOMETRY', line):
             geometry_num = geometry_num + 1
-            temp_geometry = Geometry()
+            temp_geometry = Geometry.Geometry()
             S4_Object.optical_grating.add_geometry(temp_geometry)
             read_mode = 3
         else:
@@ -301,9 +153,9 @@ def extract_data_from(input_ini_file):
                             fourier_series_num = float(re.findall(r'\d+.?\d*', line)[0])
                     S4_Object.set_fourier_series_num(fourier_series_num)
                 elif re.match(r'depth', line):
-                    S4_Object.set_depth_array([float(re.findall(r'\d+.?\d*', line)[0])])
-                elif re.match(r'slice_num', line):
-                    S4_Object.optical_grating.set_layer_num(float(re.findall(r'\d+.?\d*', line)[0] + 2))
+                    S4_Object.set_depth_array([float(elem) for elem in re.findall(r'\d+.?\d*', line)])
+                #elif re.match(r'slice_num', line):
+                #    S4_Object.optical_grating.set_layer_num(float(re.findall(r'\d+.?\d*', line)[0] + 2))
                 else:
                     pass
 
@@ -334,7 +186,7 @@ def extract_data_from(input_ini_file):
                         pass
                     else:
                         poly_file_name = (line[10:])[:-1]
-                        poly_file = open(poly_file, 'r')
+                        poly_file = open(poly_file_name, 'r')
                         line_poly = poly_file.readline()
                         while line_poly:
                             vertex = [float(re.findall(r'\d+.?\d*', line)[0]), float(re.findall(r'\d+.?\d*', line)[1])]
@@ -383,7 +235,6 @@ def write_script_to(S4_Object, output_lua_file):
     file.close()
 
 
-
 def ini2lua(input_file_name):
     '''
     This is the main body of interface transfer function.
@@ -391,6 +242,7 @@ def ini2lua(input_file_name):
     S4_Object = extract_data_from(input_file_name)
     write_script_to(S4_Object, "temp.lua")
     return output_file_name
+
 
 if __name__ == '__main__':
     if len(sys.argv) != 2:
