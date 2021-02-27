@@ -292,7 +292,7 @@ def extract_data_from(input_ini_file):
                     line = file.readline()
                     if re.match(r'domain_min', line):
                         height_min = float(re.findall(r'\d+.?\d*', line)[0])
-                        S4_Object.set_height(height_max - height_min)
+                        #S4_Object.set_height(height_max - height_min)
                 elif re.match(r'rcwa_harmonics', line):
                     fourier_series_num = float(re.findall(r'\d+.?\d*', line)[0])
                     line = file.readline()
