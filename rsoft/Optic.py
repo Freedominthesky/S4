@@ -48,7 +48,11 @@ class Optic:
     def set_polarization_angle(self, value):
         self.polarization_angle = value
         self.p_amp = 10 * math.cos(math.radians(value))
+        if self.p_amp < 0.0001:
+            self.p_amp = 0
         self.s_amp = 10 * math.sin(math.radians(value))
+        if self.s_amp < 0.0001:
+            self.s_amp = 0
     def get_polarization_angle(self):
         return self.polarization_angle
     def get_p_amp(self):

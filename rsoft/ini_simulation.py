@@ -97,9 +97,26 @@ class S4:
 
 
 def extract_data_from(input_ini_file):
+    input_file = open(input_ini_file, 'r')
+    temp_file = open("temp_file.txt", 'w')
+    line = input_file.readline()
+    while line:
+        if(line.count('\n') == len(line)):
+            pass
+        else:
+            i = 0
+            while i < len(line):
+                if line[i] != ' ':
+                    i = i + 1
+                else:
+                    break
+            temp_file.write(line[ : i] + '\n')        
+        line = input_file.readline()
+    input_file.close()
+    temp_file.close()
     S4_Object = S4()
     read_mode = 0
-    file = open(input_ini_file, 'r', encoding = 'utf-8')
+    file = open("temp_file.txt", 'r')
     line = file.readline()
     material_num = -1
     geometry_num = -1
@@ -183,7 +200,7 @@ def extract_data_from(input_ini_file):
                 if re.match(r'poly_file=', line):
                     vertex_array = []
                     if(line[10] == '\n'):
-                        pass
+                        vertex_array = [[0, 0], [0, 1], [1, 1], [1, 0], [0, 0]]
                     else:
                         poly_file_name = (line[10:])[:-1]
                         poly_file = open(poly_file_name, 'r')
@@ -193,12 +210,37 @@ def extract_data_from(input_ini_file):
                             line_poly = poly_file.readline()
                             vertex_array.append(vertex)
                     S4_Object.optical_grating.geometry_array[geometry_num].set_polygon_array(vertex_array)
-
+                elif re.match(r'begin_x', line):
+                    x = float(re.findall(r'\d+.?\d*', line)[0])
+                    line = file.readline()
+                    while line.count('\n') == len(line):
+                        line = file.readline()
+                    y = float(re.findall(r'\d+.?\d*', line)[0])
+                    line = file.readline()
+                    while line.count('\n') == len(line):
+                        line = file.readline()
+                    #z = float(re.findall(r'\d+.?\d*', line)[0])
+                    S4_Object.optical_grating.geometry_array[geometry_num].set_begin_coordinate([x, y])
+                elif re.match(r'end_x', line):
+                    print("x: ", line)
+                    x = float(re.findall(r'\d+.?\d*', line)[0])
+                    line = file.readline()
+                    while line.count('\n') == len(line):
+                        line = file.readline()
+                    print("y: ", line)
+                    y = float(re.findall(r'\d+.?\d*', line)[0])
+                    line = file.readline()
+                    while line.count('\n') == len(line):
+                        line = file.readline()
+                    print("z: ", line)
+                    #z = float(re.findall(r'\d+.?\d*', line)[0])
+                    S4_Object.optical_grating.geometry_array[geometry_num].set_end_coordinate([x, y])
                 elif re.match(r'mat_name=', line):
                     material_name = (line[9:])[:-1]
                     S4_Object.optical_grating.geometry_array[geometry_num].set_material_name(material_name)
-                else:
-                    pass
+                elif re.match(r'end_scaling', line):
+                    value = float(re.findall(r'\d+.?\d*', line)[0])
+                    S4_Object.optical_grating.geometry_array[geometry_num].set_scaling_size(value)    
 
             else:
                 pass
@@ -209,28 +251,67 @@ def extract_data_from(input_ini_file):
 
 def write_script_to(S4_Object, output_lua_file):
     file = open(output_lua_file, 'w')
+
     #set S4 simulation object
     file.write("S = S4.NewSimulation()\n\n")
+
     #set lattice vector
-    file.write("S:SetLattice({" + str((S4_Object.optical_grating.get_lattice_vector())[0][0]) + ',' + "0},{0,"\
-            +str((S4_Object.optical_grating.get_lattice_vector())[1][1]) + "})")
+    file.write("S:SetLattice({" + str((S4_Object.get_lattice_vector())[0][0]) + ',' + "0},{0,"\
+            +str((S4_Object.get_lattice_vector())[1][1]) + "})")
     file.write('\n\n')
+
     #set the spanning number of fourier series
     file.write("S:SetNumG(" + str(S4_Object.get_fourier_series_num()) + ")")
     file.write('\n\n')
+
     #set the material
     for i in range(len(S4_Object.optical_grating.get_material_array())):
-        file.write("S:AddMaterial(" + (S4_Object.optical_grating.get_material_array())[i].get_name() + '", {' \
+        file.write("S:AddMaterial(" + '"' + (S4_Object.optical_grating.get_material_array())[i].get_name() + '", {' \
             +str((S4_Object.optical_grating.get_material_array())[i].get_n() ** 2) + ", 0})")
         file.write('\n')
     file.write('\n')
-    #set the structure of optical grating
 
+    #set the structure of optical grating
     file.write('\n')
+    #add the top layer
+    file.write("S:AddLayer('AirAbove', 0 , 'air')\n")
+    #add the grating layer
+    file.write("S:AddLayer('Grating', " + str((S4_Object.get_depth_array())[1]) + ', \'air\')\n')
+
+    #S:SetLayerPatternPolygon('Slab',     -- which layer to alter
+    #                     'Vacuum',   -- material in polygon
+	#                     {0.2,0},    -- center
+	#                     0,          -- tilt angle (degrees)
+	#                     {0.3, 0.2,  -- vertices
+	#                      0.3, 0.3,
+	#                     -0.3, 0.3,
+	#                     -0.3,-0.3,
+	#                      0.3,-0.3,
+	#                      0.3,-0.2,
+	#                     -0.2,-0.2,
+	#                     -0.2, 0.2})
+    for element in S4_Object.optical_grating.get_geometry_array():
+        file.write("S:SetLayerPatternPolygon('Grating',    -- which layer to alter\n")
+        file.write("'" + element.get_material_name() + "',    -- material in polygon\n")
+        file.write("{" + str((element.get_center())[0]) +',' + str((element.get_center())[1]) + "},  -- center\n")
+        file.write("0,    -- tilt angle (degrees)\n{")
+        i = 0
+        for elem in element.get_polygon_array():
+            i = i + 1
+            file.write(str(elem[0]) + ',')
+            if i != len(element.get_polygon_array()):
+                file.write(str(elem[1]) + ',')
+            else:
+                file.write(str(elem[1]) + '})\n')
+
+    #add the bottom layer
+    file.write("S:AddLayerCopy('AirBelow', 0, 'AirAbove')\n")
+
     #simulation
+    file.write("S:SetFrequency(" + str(S4_Object.optic.get_free_space_wavelength()) + ")")
     file.write("Simulation:SetExcitationPlanewave(" \
-        + "{" + str(S4_Object.optic.get_phi())  + ',' + str(S4_Object.optic.get_theta()) + '}' \
-        + "{" + str(S4_Object.optic.get_s_amp()) + ',' + str(S4_Object.optic.get_s_phase()) + '}' \
+        + "{" + str(S4_Object.optic.get_phi())  + ',' + str(S4_Object.optic.get_theta()) + '},' \
+        + "{" + str(S4_Object.optic.get_s_amp()) + ',' + str(S4_Object.optic.get_s_phase()) + '},' \
         + "{" + str(S4_Object.optic.get_p_amp()) + ',' + str(S4_Object.optic.get_p_phase()) + '})' )
     file.close()
 
@@ -241,7 +322,6 @@ def ini2lua(input_file_name):
     '''
     S4_Object = extract_data_from(input_file_name)
     write_script_to(S4_Object, "temp.lua")
-    return output_file_name
 
 
 if __name__ == '__main__':
@@ -252,6 +332,6 @@ if __name__ == '__main__':
         print(sys.argv[1][-4:])
     else:
         lua_file = ini2lua(sys.argv[1])
-        os.system("./S4 temp.lua")
+        os.system("../build/S4 temp.lua")
         #os.system("rm temp.lua")
 

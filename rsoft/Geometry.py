@@ -1,8 +1,8 @@
 class Geometry:
     def __init__(self):
         # the parameter provided by ini file.
-        self.begin_coordinate = [0, 0, 0]
-        self.end_coordinate = [0, 0, 0]
+        self.begin_coordinate = [0, 0]
+        self.end_coordinate = [0, 0]
         self.scaling_size = 1
         self.polygon_array = []
         self.material_name = ""
@@ -21,6 +21,13 @@ class Geometry:
 
     def set_scaling_size(self, value):
         self.scaling_size = value
+        self.begin_coordinate = [elem * 2 for elem in self.begin_coordinate]
+        self.end_coordinate = [elem * 2 for elem in self.end_coordinate]
+        self.center = [self.end_coordinate[0] - self.begin_coordinate[0], self.end_coordinate[1] - self.begin_coordinate[1]]
+        for i in range(len(self.polygon_array)):
+            for j in range(2):
+                self.polygon_array[i][j] = value * self.polygon_array[i][j]
+
     def get_scaling_size(self):
         return self.scaling_size
     
